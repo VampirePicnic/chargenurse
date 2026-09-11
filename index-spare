@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Charge Board</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#f0f3f8;--surface:#fff;--surface2:#e8edf5;--border:#d4dce8;
+--text:#1a2336;--muted:#7a8fa8;--muted2:#b0bfcf;
+--green:#16a34a;--green-bg:#f0fdf4;--green-border:#bbf7d0;
+--blue:#2563eb;--blue-bg:#eff6ff;--blue-border:#bfdbfe;
+--amber:#d97706;--amber-bg:#fffbeb;--amber-border:#fde68a;
+--purple:#7c3aed;--purple-bg:#f5f3ff;--purple-border:#ddd6fe;
+--red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;
+--radius:0px;--radius-sm:0px;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);padding:16px;line-height:1.4;}
+header{display:flex;justify-content:between;align-items:center;margin-bottom:20px;background:var(--surface);padding:12px 16px;border-radius:var(--radius);border:1px solid var(--border);}
+.logo-area{display:flex;align-items:center;gap:12px;}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:-0.5px;}
+#clock{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:20px;}
+.tabs{display:flex;gap:6px;background:var(--surface2);padding:4px;border-radius:var(--radius-sm);}
+.tab-btn{border:0;background:0;padding:6px 14px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:6px;transition:all 0.15s;}
+.tab-btn.active{background:var(--surface);color:var(--text);box-shadow:0 2px 4px rgba(0,0,0,0.04);}
+.panel{display:none;}
+.panel.active{display:block;}
+.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--muted);margin:24px 0 12px 4px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;}
+.section-title span{background:var(--border);color:var(--text);font-size:11px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:10px;font-weight:500;}
+.grid-icu{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.grid-fo{display:grid;grid-template-columns:1fr;gap:12px;}
+@media(max-width:1100px){ .grid-icu{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:750px){ .grid-icu{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:480px){ .grid-icu{grid-template-columns:1fr;} }
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;position:relative;display:flex;flex-direction:column;gap:6px;transition:all 0.15s;height:160px;box-shadow:0 1px 3px rgba(0,0,0,0.01);overflow:hidden;}
+.card:active{transform:scale(0.98);background:var(--bg);}
+.card.occupied{border-color:var(--border);box-shadow:0 4px 12px rgba(26,35,54,0.03);}
+.card-header{display:flex;justify-content:space-between;align-items:center;}
+.room-badge{font-family:'DM Mono',monospace;font-weight:500;font-size:13px;background:var(--surface2);padding:2px 6px;border-radius:6px;color:var(--text);}
+.card.occupied .room-badge{background:var(--text);color:var(--surface);}
+.est-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.3px;}
+.ep{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);}
+.ei{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+.es{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.eu{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);}
+.ex{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border);font-weight:700;}
+.ed{background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;}
+.et{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);}
+.ef{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-weight:700;}
+.card-body{display:flex;flex-direction:column;gap:1px;overflow:hidden;}
+.patient-name{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;letter-spacing:-0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.owner-name{font-size:11px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.reason-text{font-size:11px;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;}
+.card-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--surface2);padding-top:4px;margin-top:auto;font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);}
+.staff-assignment{font-weight:500;}
+.conflict-banner{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);font-size:11px;padding:4px 8px;border-radius:6px;font-weight:600;margin-top:4px;display:flex;align-items:center;gap:4px;}
+.empty-state{display:flex;align-items:center;justify-content:center;flex-grow:1;color:var(--muted2);font-size:13px;font-style:italic;min-height:80px;}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(26,35,54,0.3);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;z-index:100;}
+.modal.active{display:flex;}
+.modal-content{background:var(--surface);width:100%;max-width:460px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);display:flex;flex-direction:column;max-height:90vh;}
+.modal-header{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;}
+.close-btn{border:0;background:0;font-size:20px;color:var(--muted);cursor:pointer;padding:4px;}
+.modal-body{padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);background:var(--surface);transition:border-color 0.15s;}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--text);}
+.checkbox-group{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:4px 0;}
+.checkbox-group input{width:auto;cursor:pointer;}
+.history-box{background:var(--bg);border-radius:var(--radius-sm);padding:10px;max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;font-size:12px;border:1px solid var(--border);}
+.history-item{display:flex;justify-content:space-between;gap:8px;}
+.hist-label{color:var(--muted);font-weight:500;}
+.hist-time{font-family:'DM Mono',monospace;color:var(--muted2);flex-shrink:0;}
+.modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;background:var(--bg);border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);}
+.btn{padding:10px 16px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all 0.15s;display:inline-flex;align-items:center;justify-content:center;}
+.btn-primary{background:var(--text);color:var(--surface);}
+.btn-primary:active{background:#000;}
+.btn-secondary{background:var(--surface);border-color:var(--border);color:var(--text);}
+.btn-secondary:active{background:var(--surface2);}
+.btn-danger{background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
+.btn-danger:active{background:#fee2e2;}
+.btn-dropoff{background:#eff6ff;border-color:#bfdbfe;color:#2563eb;font-size:13px;}
+.btn-surgery{background:var(--red-bg);border-color:var(--red-border);color:var(--red);font-size:13px;}
+.log-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;}
+.log-table-wrapper{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.log-table{width:100%;border-collapse:collapse;text-align:left;font-size:13px;}
+.log-table th{background:var(--surface2);padding:10px 12px;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.3px;}
+.log-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.log-table tr:last-child td{border-bottom:0;}
+.log-reason{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);}
+/* ── ROOM STATUS BADGE ───────────────────── */
+.status-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:0;}
+.status-badge{font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;}
+.sb-doctor{background:#fdf2ff;color:#7c3aed;border:1px solid #e9d5ff;}
+.sb-ready{background:#f0fdf4;color:#15803d;border:1px solid #86efac;}
+/* ── ADDITIONAL PATIENTS (multi-patient per room) ── */
+.extra-patients{display:flex;flex-direction:column;gap:1px;margin-top:3px;border-top:1px dashed var(--surface2);padding-top:3px;overflow:hidden;max-height:54px;}
+.extra-patient-row{display:flex;align-items:center;gap:4px;font-size:10px;white-space:nowrap;overflow:hidden;}
+.extra-patient-dot{width:5px;height:5px;border-radius:50%;background:var(--muted2);flex-shrink:0;}
+.extra-patient-name{font-weight:700;color:var(--text);font-family:'Syne',sans-serif;flex-shrink:0;}
+.extra-patient-info{color:var(--muted);overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;}
+/* ── MODAL ADDITIONAL PATIENTS SECTION ──── */
+.extra-pt-list{display:flex;flex-direction:column;gap:8px;}
+.extra-pt-entry{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
+.extra-pt-entry-header{display:flex;justify-content:space-between;align-items:center;}
+.extra-pt-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;}
+.btn-remove-pt{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 2px;line-height:1;}
+.btn-remove-pt:hover{color:var(--red);}
+.btn-add-pt{background:var(--bg);border:1px dashed var(--border);color:var(--muted);font-size:12px;font-weight:600;padding:7px;border-radius:var(--radius-sm);cursor:pointer;width:100%;transition:all 0.15s;}
+.btn-add-pt:hover{border-color:var(--text);color:var(--text);}
+/* ── NEXT UP QUEUE STRIP ─────────────────── */
+.queue-strip{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.queue-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;display:flex;align-items:center;gap:10px;flex:1;min-width:180px;max-width:280px;position:relative;overflow:hidden;}
+.queue-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--amber);}
+.queue-pos{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.queue-info{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.queue-name{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.queue-sub{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.queue-euth{background:var(--purple-bg);border-color:var(--purple-border);}
+.queue-euth::before{background:var(--purple);}
+.queue-euth .queue-pos{color:var(--purple);background:var(--purple-bg);border-color:var(--purple-border);}
+.queue-strip-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;align-self:center;white-space:nowrap;}
+.queue-empty{font-size:12px;color:var(--muted2);font-style:italic;padding:8px 0;}
+.queue-wait{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);padding:2px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0;margin-left:auto;}
+.queue-assign{display:flex;gap:4px;margin-top:4px;}
+.queue-assign-input{flex:1;padding:2px 6px;border:1px solid var(--border);border-radius:6px;font-size:10px;font-family:'DM Mono',monospace;color:var(--text);background:var(--bg);min-width:0;}
+.queue-assign-input:focus{outline:none;border-color:var(--blue);background:var(--surface);}
+.queue-assign-input::placeholder{color:var(--muted2);}
+.queue-card .queue-info{flex:1;min-width:0;}
+/* ── TECH LOAD BAR ───────────────────────── */
+.tech-load-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;min-height:0;}
+.tech-pill{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 12px 5px 8px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;transition:all 0.2s;}
+.tech-pill-avatar{width:22px;height:22px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0;}
+.tech-pill-count{font-size:13px;font-weight:700;}
+.tech-pill.load-1{border-color:var(--green-border);background:var(--green-bg);color:var(--green);}
+.tech-pill.load-1 .tech-pill-avatar{background:var(--green-border);color:var(--green);}
+.tech-pill.load-2{border-color:var(--amber-border);background:var(--amber-bg);color:var(--amber);}
+.tech-pill.load-2 .tech-pill-avatar{background:var(--amber-border);color:var(--amber);}
+.tech-pill.load-3{border-color:var(--red-border);background:var(--red-bg);color:var(--red);}
+.tech-pill.load-3 .tech-pill-avatar{background:var(--red-border);color:var(--red);}
+/* ── TIMELINE LOG CARDS ──────────────────── */
+.log-card-list{display:flex;flex-direction:column;gap:10px;}
+.log-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;border-left:4px solid var(--border);}
+.log-card.over-2h{border-left-color:var(--red);}
+.log-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.log-card-patient{display:flex;flex-direction:column;gap:2px;}
+.log-card-name{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;}
+.log-card-meta{font-size:12px;color:var(--muted);}
+.log-card-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.log-card-room{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;background:var(--surface2);padding:2px 7px;border-radius:6px;}
+.over-2h-flag{font-size:10px;font-weight:700;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);padding:2px 7px;border-radius:10px;letter-spacing:0.3px;}
+.dropoff-flag{font-size:10px;font-weight:700;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);padding:2px 7px;border-radius:10px;}
+.surgery-flag{font-size:10px;font-weight:700;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);padding:2px 7px;border-radius:10px;}
+.log-timeline{display:flex;flex-direction:column;gap:0;}
+.log-tl-row{display:flex;align-items:stretch;gap:0;min-height:28px;}
+.log-tl-left{width:120px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;padding-right:12px;}
+.log-tl-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap;}
+.log-tl-spine{display:flex;flex-direction:column;align-items:center;width:16px;flex-shrink:0;}
+.log-tl-dot{width:8px;height:8px;border-radius:50%;background:var(--border);border:2px solid var(--surface);flex-shrink:0;margin-top:10px;}
+.log-tl-dot.active{background:var(--blue);}
+.log-tl-dot.green{background:var(--green);}
+.log-tl-dot.amber{background:var(--amber);}
+.log-tl-dot.red{background:var(--red);}
+.log-tl-line{width:2px;background:var(--border);flex:1;margin-left:3px;}
+.log-tl-right{flex:1;display:flex;flex-direction:column;justify-content:center;padding:6px 0 6px 10px;}
+.log-tl-label{font-size:12px;font-weight:600;color:var(--text);}
+.log-tl-value{font-size:11px;color:var(--muted);margin-top:1px;}
+.log-tl-duration{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted2);margin-top:1px;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+</head>
+<body>
+<header>
+<div class="logo-area">
+<h1>Charge Board</h1>
+<div id="clock">00:00 AM</div>
+</div>
+<div class="tabs">
+<button class="tab-btn active" onclick="switchTab('board')">Active Board</button>
+<button class="tab-btn" onclick="switchTab('log')">Archive Log</button>
+</div>
+</header>
+<div id="panel-board" class="panel active">
+<div class="queue-strip" id="queue-strip"></div>
+<div class="tech-load-bar" id="tech-load-bar"></div>
+<div class="section-title">Exam Rooms <span id="count-icu">0/10</span></div>
+<div class="grid-icu" id="container-icu"></div>
+<div class="section-title">Front Office <span id="count-fo">0/1</span></div>
+<div class="grid-fo" id="container-fo" style="grid-template-columns:1fr;max-width:340px;"></div>
+</div>
+<div id="panel-log" class="panel">
+<div class="log-controls">
+<div class="section-title" style="margin:0;">Archived Patient Logs</div>
+<button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="clearEntireLog()">Clear Log History</button>
+</div>
+<div class="log-card-list" id="log-card-list"></div>
+</div>
+<div class="modal" id="modal-edit" onclick="if(event.target===this)closeModal()">
+<div class="modal-content">
+<div class="modal-header">
+<div class="modal-title" id="modal-room-title">Room Details</div>
+<button class="close-btn" onclick="closeModal()">&times;</button>
+</div>
+<div class="modal-body">
+<div class="form-row">
+<div class="form-group">
+<label>Pet Name</label>
+<input type="text" id="input-name" placeholder="Available">
+</div>
+<div class="form-group">
+<label>Owner Last Name</label>
+<input type="text" id="input-owner" placeholder="Optional">
+</div>
+</div>
+<div class="form-group">
+<label>Reason for Visit</label>
+<textarea id="input-reason" rows="2" placeholder="Symptoms / procedure notes..."></textarea>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label>Doctor Assigned</label>
+<input type="text" id="input-doctor" placeholder="DVM Last Name">
+</div>
+<div class="form-group">
+<label>Tech Assigned</label>
+<input type="text" id="input-tech" placeholder="Tech Name">
+</div>
+</div>
+<div class="form-row" style="margin-top: 4px;">
+<div class="form-group">
+<label>Estimate Status</label>
+<select id="select-status">
+<option value="pending">⏳ Pending</option>
+<option value="ready">📋 Estimate Ready</option>
+<option value="signed">✅ Signed</option>
+<option value="diag">🔬 Diagnostics Finished</option>
+<option value="treat">💊 Treatments Finished</option>
+<option value="discharge">🏠 Ready for Discharge</option>
+<option value="euth">💜 Euthanasia</option>
+</select>
+</div>
+<div class="form-group">
+<label>Room Status</label>
+<select id="select-room-status">
+<option value="">— None —</option>
+<option value="doctor_starting">🩺 Doctor Starting</option>
+<option value="ready_for_doctor">✅ Ready for Doctor</option>
+</select>
+</div>
+</div>
+<div class="form-group" id="extra-patients-section">
+<label style="display:flex;justify-content:space-between;align-items:center;">
+<span>Additional Patients (same room)</span>
+<span style="font-size:10px;color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;">max 4</span>
+</label>
+<div class="extra-pt-list" id="extra-pt-list"></div>
+<button class="btn-add-pt" id="btn-add-pt" onclick="addExtraPatientRow()">+ Add Patient</button>
+</div>
+<div class="form-group" id="history-container" style="display:none;">
+<label>Room History Timeline</label>
+<div class="history-box" id="history-box"></div>
+</div>
+</div>
+<div class="modal-footer">
+<div style="display:flex;flex-direction:column;gap:6px;">
+<button class="btn btn-danger" id="btn-clear" onclick="clearRoom('discharge')">Discharge / Clear</button>
+<button class="btn btn-dropoff" id="btn-dropoff" onclick="clearRoom('dropoff')" style="display:none;">🚗 Discharge to Drop Off</button>
+<button class="btn btn-surgery" id="btn-surgery" onclick="clearRoom('surgery')" style="display:none;">🔪 Discharge to Surgery</button>
+</div>
+<div style="display:flex; gap:8px;">
+<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+<button class="btn btn-primary" onclick="saveRoom()">Save Changes</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+// ── CONFIGURATION & STATE ─────────────────
+const FB_URL = 'https://charge-nurse-default-rtdb.firebaseio.com';
+const FB_PATH = 'cb2';
+firebase.initializeApp({ apiKey: 'AIzaSyC3GFPEr1SoIw-Vq7RnEjoCKJeR0lPzyac', databaseURL: FB_URL });
+const db = firebase.database();
+
+// ── ANONYMOUS AUTH ─────────────────────────
+// Rules require auth != null, so nothing reads/writes until this resolves.
+// signInAnonymously() is fired immediately; onAuthStateChanged fires once
+// Firebase confirms the session, and only then do we attach the realtime
+// listeners further down.
+firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    attachRealtimeListeners();
+  }
+});
+firebase.auth().signInAnonymously().catch(err => {
+  console.error('Anonymous sign-in failed:', err);
+  updateBadgeFallback();
+});
+function updateBadgeFallback(){
+  const el = document.getElementById('clock');
+  if(el) el.textContent = 'Sign-in error';
+}
+
+const ICU_ROOMS = ['1','2','3','4','5','6','7','8','9','10'];
+const FO_ROOMS = ['FO1']; // Single comfort/euth room
+let rooms = {};
+let logs = {};
+let activeRoomKey = null;
+// Initialize missing structure arrays locally
+ICU_ROOMS.concat(FO_ROOMS).forEach(r => { rooms[r] = {}; });
+// ── TAB CONTROLLER ────────────────────────
+function switchTab(tab){
+document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='board')||(i===1&&tab==='log')));
+document.getElementById('panel-board').classList.toggle('active',tab==='board');
+document.getElementById('panel-log').classList.toggle('active',tab==='log');
+if(tab==='log') renderLog();
+};
+// ── CLOCK TIMER ───────────────────────────
+function tick(){
+const n = new Date();
+const h = n.getHours() % 12 || 12;
+const m = String(n.getMinutes()).padStart(2,'0');
+const a = n.getHours() >= 12 ? 'PM' : 'AM';
+document.getElementById('clock').textContent = `${h}:${m} ${a}`;
+}
+tick();
+setInterval(tick, 1000);
+// ── RENDERING ENGINES ─────────────────────
+function saveQueueAssignment(field, value, patientName){
+// Keyed by patient name so scraper overwriting cb2/queue never wipes assignments
+const safeKey = (patientName || '').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase().slice(0, 40);
+if (!safeKey) return;
+db.ref('cb2/queueAssign/' + safeKey + '/' + field).set(value.trim());
+}
+function renderQueue(queueData){
+const strip = document.getElementById('queue-strip');
+if(!strip) return;
+strip.innerHTML = '';
+const list = Array.isArray(queueData) ? queueData : Object.values(queueData || {});
+if(list.length === 0){
+strip.innerHTML = '<span class="queue-empty">Queue empty</span>';
+return;
+}
+const label = document.createElement('span');
+label.className = 'queue-strip-label';
+label.textContent = '⏳ Next Up';
+strip.appendChild(label);
+list.slice(0, 3).forEach((p, i) => {
+const card = document.createElement('div');
+card.className = 'queue-card' + (p.isEuth ? ' queue-euth' : '');
+// Position number (1-based)
+const pos = i + 1;
+// Sub: owner · chief concern (trimmed to keep compact)
+const concern = p.reason ? p.reason.slice(0, 60) + (p.reason.length > 60 ? '…' : '') : '';
+const sub = [p.owner, concern].filter(Boolean).join(' · ');
+// Wait time badge
+const waitHTML = p.waitMin
+? `<div class="queue-wait">${esc(p.waitMin)}</div>`
+: '';
+// Escape name once for use in attribute — single quotes safe inside double-quoted attr
+const safeName = (p.name||'').replace(/'/g, '');
+card.innerHTML = `
+<div class="queue-pos">${pos}</div>
+<div class="queue-info">
+<div class="queue-name">${esc(p.name)}</div>
+${sub ? `<div class="queue-sub">${esc(sub)}</div>` : ''}
+<div class="queue-assign">
+<input class="queue-assign-input" placeholder="Tech" value="${esc(p.tech||'')}"
+onblur="saveQueueAssignment('tech', this.value, '${safeName}')"
+onkeydown="if(event.key==='Enter')this.blur()"
+onclick="event.stopPropagation()">
+<input class="queue-assign-input" placeholder="Doctor" value="${esc(p.doctor||'')}"
+onblur="saveQueueAssignment('doctor', this.value, '${safeName}')"
+onkeydown="if(event.key==='Enter')this.blur()"
+onclick="event.stopPropagation()">
+</div>
+</div>
+${waitHTML}
+`;
+strip.appendChild(card);
+});
+}
+function renderBoard(){
+let occIcu = 0, occFo = 0;
+const icuRoot = document.getElementById('container-icu');
+const foRoot = document.getElementById('container-fo');
+icuRoot.innerHTML = '';
+foRoot.innerHTML = '';
+// Render ICU Array Grid Cells
+ICU_ROOMS.forEach(r => {
+const data = rooms[r] || {};
+if(data.name) occIcu++;
+icuRoot.appendChild(createCard(r, data, `Exam ${r}`));
+});
+// Render Expanded Front Office Grid Row Cells
+FO_ROOMS.forEach(r => {
+const data = rooms[r] || {};
+if(data.name) occFo++;
+foRoot.appendChild(createCard(r, data, 'Front Office'));
+});
+document.getElementById('count-icu').textContent = `${occIcu}/10`;
+document.getElementById('count-fo').textContent = `${occFo}/1`;
+renderTechLoad();
+}
+function createCard(key, data, displayLabel){
+const card = document.createElement('div');
+card.className = `card ${data.name ? 'occupied' : ''}`.trim();
+card.onclick = () => openModal(key);
+if(!data.name){
+card.innerHTML = `
+<div class="card-header"><span class="room-badge">${displayLabel}</span></div>
+<div class="empty-state">Available</div>
+`;
+return card;
+}
+const estStatus = data.estStatus || 'pending';
+const displayReason = data.reason ? esc(data.reason) : 'No reason provided';
+let footerContext = '';
+if(data.doctor && data.tech) footerContext = `DVM: ${esc(data.doctor)} | Tech: ${esc(data.tech)}`;
+else if(data.doctor) footerContext = `DVM: ${esc(data.doctor)}`;
+else if(data.tech) footerContext = `Tech: ${esc(data.tech)}`;
+else footerContext = data.admittedAt ? `In: ${fmtTime(data.admittedAt)}` : '—';
+// Conflict state indicator template if scraping mapping runs into occupied cell
+let conflictHTML = '';
+if(data.wwConflict && data.wwConflictName){
+conflictHTML = `
+<div class="conflict-banner">
+⚠️ WaitWell: ${esc(data.wwConflictName)} waiting
+</div>
+`;
+}
+// Room status badge
+let statusBadgeHTML = '';
+if(data.roomStatus === 'doctor_starting') {
+statusBadgeHTML = `<span class="status-badge sb-doctor">🩺 Doctor Starting</span>`;
+} else if(data.roomStatus === 'ready_for_doctor') {
+statusBadgeHTML = `<span class="status-badge sb-ready">✅ Ready for Doctor</span>`;
+}
+// Additional patients rows
+let extraPatientsHTML = '';
+if(data.additionalPatients && data.additionalPatients.length > 0){
+const rows = data.additionalPatients.map(p => `
+<div class="extra-patient-row">
+<div class="extra-patient-dot"></div>
+<span class="extra-patient-name">${esc(p.name)}</span>
+${p.owner ? `<span class="extra-patient-info">· ${esc(p.owner)}</span>` : ''}
+${p.reason ? `<span class="extra-patient-info">· ${esc(p.reason)}</span>` : ''}
+</div>`).join('');
+extraPatientsHTML = `<div class="extra-patients">${rows}</div>`;
+}
+card.innerHTML = `
+<div class="card-header">
+<span class="room-badge">${displayLabel}</span>
+<span class="est-badge ${eC(estStatus)}">${eLabel(estStatus)}</span>
+</div>
+${statusBadgeHTML ? `<div class="status-row">${statusBadgeHTML}</div>` : ''}
+<div class="card-body">
+<div class="patient-name">${esc(data.name)}</div>
+${data.owner ? `<div class="owner-name">${esc(data.owner)}</div>` : ''}
+<div class="reason-text">${displayReason}</div>
+${extraPatientsHTML}
+${conflictHTML}
+</div>
+<div class="card-footer">
+<div class="staff-assignment">${footerContext}</div>
+</div>
+`;
+return card;
+}
+function fmtDur(ms){
+if(!ms || ms < 0) return '';
+const totalMin = Math.floor(ms / 60000);
+const h = Math.floor(totalMin / 60);
+const m = totalMin % 60;
+if(h === 0) return `${m}m`;
+return `${h}h ${m}m`;
+}
+function renderTechLoad(){
+const bar = document.getElementById('tech-load-bar');
+if(!bar) return;
+const counts = {};
+ICU_ROOMS.concat(FO_ROOMS).forEach(r => {
+const d = rooms[r] || {};
+if(d.name && d.tech){
+const key = d.tech.trim().toUpperCase();
+counts[key] = (counts[key] || 0) + 1;
+}
+});
+bar.innerHTML = '';
+if(Object.keys(counts).length === 0) return;
+Object.entries(counts).sort((a,b) => b[1]-a[1]).forEach(([tech, count]) => {
+const loadClass = count >= 3 ? 'load-3' : count === 2 ? 'load-2' : 'load-1';
+const pill = document.createElement('div');
+pill.className = `tech-pill ${loadClass}`;
+pill.innerHTML = `<div class="tech-pill-avatar">${esc(tech.slice(0,2))}</div><span>${esc(tech)}</span><span class="tech-pill-count">${count}</span>`;
+bar.appendChild(pill);
+});
+}
+function tlRow(dotClass, label, value, time, prevTime, isLast){
+const dur = (prevTime && time) ? fmtDur(time - prevTime) : '';
+return `
+<div class="log-tl-row">
+<div class="log-tl-left"><span class="log-tl-time">${time ? fmtTime(time) : ''}</span></div>
+<div class="log-tl-spine">
+<div class="log-tl-dot ${dotClass}"></div>
+${isLast ? '' : '<div class="log-tl-line"></div>'}
+</div>
+<div class="log-tl-right">
+<div class="log-tl-label">${label}${value ? ` <span style="font-weight:400;color:var(--muted);">${esc(value)}</span>` : ''}</div>
+${dur ? `<div class="log-tl-duration">+${dur} since previous</div>` : ''}
+</div>
+</div>`;
+}
+function renderLog(){
+const list = document.getElementById('log-card-list');
+list.innerHTML = '';
+const items = Object.entries(logs || {}).map(([id, val]) => ({ id, ...val }));
+items.sort((a,b) => (b.loggedAt || 0) - (a.loggedAt || 0));
+if(items.length === 0){
+list.innerHTML = `<div class="empty-state" style="min-height:120px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);">No history records archived yet.</div>`;
+return;
+}
+items.forEach(item => {
+const admittedAt = item.admittedAt || null;
+const techAt = item.techAt || null;
+const doctorAt = item.doctorAt || null;
+const loggedAt = item.loggedAt || null;
+const totalMs = (admittedAt && loggedAt) ? (loggedAt - admittedAt) : null;
+const over2h = totalMs && totalMs > 7200000;
+const rmDisplay = item.roomNum ? (item.roomNum.startsWith('FO') ? 'Front Office' : `Exam ${item.roomNum}`) : '—';
+// Build timeline rows
+let tlHTML = '';
+let prev = null;
+if(admittedAt){
+tlHTML += tlRow('active', 'Admitted', item.name || '', admittedAt, null, false);
+prev = admittedAt;
+}
+if(techAt && item.tech){
+tlHTML += tlRow('amber', 'Tech Assigned', item.tech, techAt, prev, false);
+prev = techAt;
+}
+if(doctorAt && item.doctor){
+tlHTML += tlRow('green', 'Doctor Assigned', item.doctor, doctorAt, prev, false);
+prev = doctorAt;
+}
+const dischargeLabel = item.logType === 'dropoff' ? 'Drop Off' : item.logType === 'surgery' ? 'To Surgery' : 'Discharged';
+if(loggedAt){
+tlHTML += tlRow('red', dischargeLabel, '', loggedAt, prev, true);
+}
+const card = document.createElement('div');
+card.className = `log-card ${over2h ? 'over-2h' : ''}`;
+card.innerHTML = `
+<div class="log-card-header">
+<div class="log-card-patient">
+<div class="log-card-name">${esc(item.name || '—')}</div>
+<div class="log-card-meta">${item.owner ? esc(item.owner) + ' · ' : ''}${item.reason ? esc(item.reason) : ''}</div>
+</div>
+<div class="log-card-badges">
+<span class="log-card-room">${rmDisplay}</span>
+<span class="est-badge ${eC(item.estStatus)}">${eLabel(item.estStatus||'pending')}</span>
+${over2h ? '<span class="over-2h-flag">OVER 2H</span>' : ''}
+${item.logType==='dropoff' ? '<span class="dropoff-flag">🚗 Drop Off</span>' : ''}
+${item.logType==='surgery' ? '<span class="surgery-flag">🔪 Surgery</span>' : ''}
+${totalMs ? `<span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">${fmtDur(totalMs)} total</span>` : ''}
+</div>
+</div>
+<div class="log-timeline">${tlHTML}</div>
+`;
+list.appendChild(card);
+});
+}
+// ── DATA INTERACTION MODAL HANDLERS ───────
+function openModal(key){
+activeRoomKey = key;
+const data = rooms[key] || {};
+const isFO = key.startsWith('FO');
+const label = isFO ? 'Front Office' : `Exam Room ${key}`;
+document.getElementById('modal-room-title').textContent = label;
+document.getElementById('input-name').value = data.name || '';
+document.getElementById('input-owner').value = data.owner || '';
+document.getElementById('input-reason').value = data.reason || '';
+document.getElementById('input-doctor').value = data.doctor || '';
+document.getElementById('input-tech').value = data.tech || '';
+document.getElementById('select-status').value = data.estStatus || 'pending';
+document.getElementById('select-room-status').value = data.roomStatus || '';
+// Populate additional patients
+const extraList = document.getElementById('extra-pt-list');
+extraList.innerHTML = '';
+const pts = data.additionalPatients || [];
+pts.forEach((p, i) => addExtraPatientRow(p, i));
+document.getElementById('btn-add-pt').style.display = pts.length >= 4 ? 'none' : 'block';
+const histContainer = document.getElementById('history-container');
+const histBox = document.getElementById('history-box');
+if(data.name && data.history && data.history.length > 0){
+histContainer.style.display = 'flex';
+histBox.innerHTML = data.history.map(h => `
+<div class="history-item">
+<span class="hist-label"><strong>${esc(h.label)}:</strong> ${esc(h.value)}</span>
+<span class="hist-time">${fmtTime(h.at)}</span>
+</div>
+`).reverse().join('');
+} else {
+histContainer.style.display = 'none';
+}
+document.getElementById('btn-clear').style.display = data.name ? 'inline-flex' : 'none';
+document.getElementById('btn-dropoff').style.display = data.name ? 'inline-flex' : 'none';
+document.getElementById('btn-surgery').style.display = data.name ? 'inline-flex' : 'none';
+document.getElementById('modal-edit').classList.add('active');
+}
+function closeModal(){
+document.getElementById('modal-edit').classList.remove('active');
+activeRoomKey = null;
+}
+// PORTED FROM V6: Intelligent Change Log Mutator Audit Trackers
+function saveRoom(){
+if(!activeRoomKey) return;
+const now = Date.now();
+const existing = rooms[activeRoomKey] || {};
+const nameVal = document.getElementById('input-name').value.trim();
+const ownerVal = document.getElementById('input-owner').value.trim();
+const reasonVal = document.getElementById('input-reason').value.trim();
+const doctorVal = document.getElementById('input-doctor').value.trim();
+const techVal = document.getElementById('input-tech').value.trim();
+const statusVal = document.getElementById('select-status').value;
+const roomStatusVal = document.getElementById('select-room-status').value;
+// Collect additional patients from dynamic rows
+const additionalPatients = [];
+document.querySelectorAll('.extra-pt-entry').forEach(entry => {
+const n = entry.querySelector('.ep-name').value.trim();
+if(n) {
+additionalPatients.push({
+name: n,
+owner: entry.querySelector('.ep-owner').value.trim(),
+reason: entry.querySelector('.ep-reason').value.trim()
+});
+}
+});
+if(!nameVal){
+clearRoom();
+return;
+}
+// Generate functional tracking history updates dynamically
+let newHist = existing.history ? [...existing.history] : [];
+if(!existing.name){
+newHist.push({ label: 'Admitted (Manual)', value: nameVal, at: now });
+} else {
+if(existing.name !== nameVal) newHist.push({ label: 'Name Changed', value: nameVal, at: now });
+if(existing.doctor !== doctorVal) newHist.push({ label: 'Doctor Updated', value: doctorVal || 'Cleared', at: now });
+if(existing.tech !== techVal) newHist.push({ label: 'Tech Updated', value: techVal || 'Cleared', at: now });
+if(existing.estStatus !== statusVal) newHist.push({ label: 'Estimate Status', value: eLabel(statusVal), at: now });
+if((existing.roomStatus||'') !== roomStatusVal) newHist.push({ label: 'Room Status', value: rsLabel(roomStatusVal) || 'Cleared', at: now });
+}
+const payload = {
+...existing,
+name: nameVal,
+owner: ownerVal,
+reason: reasonVal,
+doctor: doctorVal,
+doctorAt: existing.doctor !== doctorVal ? now : (existing.doctorAt || null),
+tech: techVal,
+techAt: existing.tech !== techVal ? now : (existing.techAt || null),
+estStatus: statusVal,
+estUpdatedAt: existing.estStatus !== statusVal ? now : (existing.estUpdatedAt || null),
+roomStatus: roomStatusVal || null,
+admittedAt: existing.admittedAt || now,
+additionalPatients: additionalPatients,
+history: newHist,
+wwConflict: false
+};
+db.ref(`${FB_PATH}/rooms/${activeRoomKey}`).set(payload, () => {
+closeModal();
+});
+}
+function clearRoom(logType){
+if(!activeRoomKey) return;
+logType = logType || 'discharge';
+const existing = rooms[activeRoomKey] || {};
+if(existing.name){
+const now = Date.now();
+const logHistory = existing.history ? [...existing.history] : [];
+const logLabel = logType === 'dropoff' ? 'Discharged to Drop Off' : logType === 'surgery' ? 'Discharged to Surgery' : 'Discharged (Manual)';
+logHistory.push({ label: logLabel, value: '', at: now });
+const archiveItem = {
+...existing,
+roomNum: activeRoomKey,
+loggedAt: now,
+logType: logType,
+isSurgery: logType === 'surgery',
+history: logHistory
+};
+// Deterministic key so ICU board dedup (chargeLogId) never double-imports
+const dedupKey = (existing.admittedAt || Date.now()).toString(36) + '_' + (existing.name||'unk').replace(/[^a-zA-Z0-9]/g,'').toLowerCase().slice(0,12);
+db.ref(`${FB_PATH}/log/${dedupKey}`).set(archiveItem);
+}
+db.ref(`${FB_PATH}/rooms/${activeRoomKey}`).set(null, () => {
+closeModal();
+});
+}
+function clearEntireLog(){
+if(confirm('Are you absolute sure you want to completely erase the archived log history?')){
+db.ref(`${FB_PATH}/log`).set(null);
+}
+}
+// ── SYSTEM COMPLIANCE PARSERS ─────────────
+function eC(v){ return {pending:'ep',ready:'ei',signed:'es',diag:'ed',treat:'et',discharge:'ef',euth:'ex'}[v]||'ep'; }
+function eLabel(v){ return {pending:'⏳ Pending',ready:'📋 Est. Ready',signed:'✅ Signed',diag:'🔬 Diag Done',treat:'💊 Tx Done',discharge:'🏠 Discharge',euth:'💜 Euth'}[v]||'—'; }
+function rsLabel(v){ return {doctor_starting:'Doctor Starting',ready_for_doctor:'Ready for Doctor'}[v]||''; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtTime(ts){ if(!ts) return '—'; const d=new Date(ts); return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
+function fmtDate(ts){ if(!ts) return ''; const d=new Date(ts); return `${d.getMonth()+1}/${d.getDate()}`; }
+// ── ADDITIONAL PATIENT ROW BUILDER ────────
+function addExtraPatientRow(data, idx){
+const list = document.getElementById('extra-pt-list');
+const current = list.querySelectorAll('.extra-pt-entry').length;
+if(current >= 4) return;
+const i = idx !== undefined ? idx : current;
+const entry = document.createElement('div');
+entry.className = 'extra-pt-entry';
+entry.innerHTML = `
+<div class="extra-pt-entry-header">
+<span class="extra-pt-label">Patient ${i + 2}</span>
+<button class="btn-remove-pt" onclick="removeExtraPatientRow(this)" title="Remove">&times;</button>
+</div>
+<div class="form-row" style="gap:8px;">
+<input class="ep-name" type="text" placeholder="Pet Name" value="${esc(data&&data.name||'')}" style="font-size:13px;padding:7px 10px;">
+<input class="ep-owner" type="text" placeholder="Owner" value="${esc(data&&data.owner||'')}" style="font-size:13px;padding:7px 10px;">
+</div>
+<input class="ep-reason" type="text" placeholder="Reason / notes" value="${esc(data&&data.reason||'')}" style="font-size:13px;padding:7px 10px;width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);background:var(--surface);">
+`;
+list.appendChild(entry);
+const btn = document.getElementById('btn-add-pt');
+if(list.querySelectorAll('.extra-pt-entry').length >= 4) btn.style.display = 'none';
+else btn.style.display = 'block';
+}
+function removeExtraPatientRow(btn){
+btn.closest('.extra-pt-entry').remove();
+const list = document.getElementById('extra-pt-list');
+// Re-label remaining entries
+list.querySelectorAll('.extra-pt-entry').forEach((entry, i) => {
+entry.querySelector('.extra-pt-label').textContent = `Patient ${i + 2}`;
+});
+document.getElementById('btn-add-pt').style.display = list.querySelectorAll('.extra-pt-entry').length >= 4 ? 'none' : 'block';
+}
+// ── REALTIME EVENT DRIVEN WEBSOCKETS ──────
+// Wrapped in a function now — only called once anonymous auth succeeds,
+// since the security rules require auth != null to read or write at all.
+function attachRealtimeListeners(){
+db.ref(`${FB_PATH}/rooms`).on('value', snap => {
+const data = snap.val() || {};
+// Flush previous cached models before merging updates
+ICU_ROOMS.concat(FO_ROOMS).forEach(r => { rooms[r] = {}; });
+Object.entries(data).forEach(([r, val]) => { if(rooms[r]) rooms[r] = val; });
+renderBoard();
+// Refresh modal if opened on live tracking sync updates
+if(activeRoomKey) openModal(activeRoomKey);
+});
+let queueAssignCache = {};
+db.ref('cb2/queueAssign').on('value', snap => {
+queueAssignCache = snap.val() || {};
+});
+db.ref('cb2/queue').on('value', snap => {
+const rawQueue = snap.val() || [];
+const list = Array.isArray(rawQueue) ? rawQueue : Object.values(rawQueue);
+// Merge saved assignments into queue entries by patient name
+const merged = list.map(p => {
+const safeKey = (p.name || '').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase().slice(0, 40);
+const assign = queueAssignCache[safeKey] || {};
+return { ...p, tech: assign.tech || '', doctor: assign.doctor || '' };
+});
+renderQueue(merged);
+});
+db.ref(`${FB_PATH}/log`).on('value', snap => {
+logs = snap.val() || {};
+if(document.getElementById('panel-log').classList.contains('active')) renderLog();
+});
+}
+</script>
+</body>
+</html>
